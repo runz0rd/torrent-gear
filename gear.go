@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/runz0rd/torrent-tools/common"
+	"github.com/runz0rd/common-go"
 	"gopkg.in/yaml.v3"
 )
 
