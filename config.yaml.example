@@ -1,0 +1,11 @@
+client:
+  address: x
+  user: x
+  pass: x
+  type: transmission
+gears:
+- name: x
+  type: feed
+  url: x
+  check_second: 5
+  destination_dir: x
