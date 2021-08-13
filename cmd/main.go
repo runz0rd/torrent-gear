@@ -21,11 +21,11 @@ func main() {
 func run(config string) error {
 	c, err := gear.ReadConfig(config)
 	if err != nil {
-		return errors.Wrap(err, "config read error")
+		return errors.WithMessage(err, "config read error")
 	}
 	tc, err := c.Client.NewTorrentClientByType()
 	if err != nil {
-		return errors.Wrap(err, "torrent client init error")
+		return errors.WithMessage(err, "torrent client init error")
 	}
 	g := gear.NewGear(tc, func(err error) {
 		log.Print(err)

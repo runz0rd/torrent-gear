@@ -79,15 +79,15 @@ func (g *Gear) handle(gc GearConfig) error {
 	log.Printf("[%v] checking", gc.Name)
 	handler, err := gc.Handler()
 	if err != nil {
-		return errors.Wrapf(err, "[%v] handler init error", gc.Name)
+		return err
 	}
 	paths, err := handler.Process(gc.Url)
 	if err != nil {
-		return errors.Wrapf(err, "[%v] handler process error", gc.Name)
+		return err
 	}
 	for _, path := range paths {
 		if err := g.tc.Download(path, gc.DestionationDir); err != nil {
-			return errors.Wrapf(err, "[%v] torrent client download error", gc.Name)
+			return err
 		}
 		log.Printf("[%v] added %q to torrent client", gc.Name, path)
 	}
