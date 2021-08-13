@@ -22,16 +22,17 @@ const (
 )
 
 type GearResult struct {
+	Name  string
 	Type  string
 	Value string
 }
 
-func NewGerResult(value string) GearResult {
+func NewGearResult(name, value string) GearResult {
 	type_ := GearResultTypeContent
 	if strings.HasPrefix(value, "http") {
 		type_ = GearResultTypeUrl
 	}
-	return GearResult{type_, value}
+	return GearResult{name, type_, value}
 }
 
 type GearHandler interface {
@@ -118,7 +119,7 @@ func (g *Gear) handle(gc GearConfig) {
 				g.errHandler(errors.Errorf(wrapMessagef(gc.Name, "unsupported result type %q", result.Type)))
 				continue
 			}
-			log.Println(wrapMessagef(gc.Name, "added %q to torrent client", result.Value))
+			log.Println(wrapMessagef(gc.Name, "added %q to torrent client", result.Name))
 		}
 		time.Sleep(time.Duration(gc.CheckSecond) * time.Second)
 	}

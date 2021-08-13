@@ -20,7 +20,7 @@ func (fg *FeedGear) Handle(url string) ([]GearResult, error) {
 		return nil, err
 	}
 	for _, item := range feed.Items {
-		results = append(results, NewGerResult(item.Link))
+		results = append(results, NewGearResult(item.Title, item.Link))
 	}
 	return results, nil
 }
