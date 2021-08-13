@@ -28,12 +28,14 @@ func run(config string) error {
 		return errors.Wrap(err, "torrent client init error")
 	}
 	g := gear.NewGear(tc, func(err error) {
+		log.Print(err)
+		for errors.Unwrap(err) != nil {
+			err = errors.Unwrap(err)
+		}
 		if err, ok := err.(gear.StackTracer); ok {
 			for _, f := range err.StackTrace() {
 				log.Printf("%+s:%d\n", f, f)
 			}
-		} else {
-			log.Print(err)
 		}
 	})
 	g.Shift(c.Gears...)
