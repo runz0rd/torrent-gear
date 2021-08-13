@@ -30,7 +30,7 @@ func (fg *FeedGear) Process(url string) ([]string, error) {
 	for _, item := range feed.Items {
 		path, err := download(item.Link, os.TempDir())
 		if err != nil {
-			return nil, errors.Wrap(err, "download error")
+			return nil, err
 		}
 		paths = append(paths, path)
 	}
