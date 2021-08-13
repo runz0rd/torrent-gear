@@ -2,7 +2,6 @@ package gear
 
 import (
 	"github.com/mmcdole/gofeed"
-	"github.com/pkg/errors"
 )
 
 type FeedGear struct {
@@ -14,11 +13,11 @@ func NewFeedGear() *FeedGear {
 	return &FeedGear{p: parser}
 }
 
-func (fg *FeedGear) Process(url string) ([]GearResult, error) {
+func (fg *FeedGear) Handle(url string) ([]GearResult, error) {
 	var results []GearResult
 	feed, err := fg.p.ParseURL(url)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse error")
+		return nil, err
 	}
 	for _, item := range feed.Items {
 		results = append(results, NewGerResult(item.Link))

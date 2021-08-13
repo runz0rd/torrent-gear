@@ -1,6 +1,7 @@
 package gear
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -33,9 +34,9 @@ func NewGerResult(value string) GearResult {
 	return GearResult{type_, value}
 }
 
-type GearType interface {
+type GearHandler interface {
 	// source could be an url or a filepath, depending on the implementation
-	Process(source string) (results []GearResult, err error)
+	Handle(source string) (results []GearResult, err error)
 }
 
 type GearConfig struct {
@@ -46,7 +47,7 @@ type GearConfig struct {
 	Type            string `yaml:"type,omitempty"`
 }
 
-func (gc GearConfig) Handler() (GearType, error) {
+func (gc GearConfig) Handler() (GearHandler, error) {
 	switch gc.Type {
 	// todo implement more gears!
 	case "feed":
@@ -90,35 +91,39 @@ func (g *Gear) Shift(gcs ...GearConfig) {
 
 func (g *Gear) handle(gc GearConfig) {
 	for {
-		log.Printf("[%v] checking", gc.Name)
+		log.Println(wrapMessagef(gc.Name, "checking"))
 		handler, err := gc.Handler()
 		if err != nil {
-			g.errHandler(err)
+			g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "handler init error")))
 			return
 		}
-		results, err := handler.Process(gc.Url)
+		results, err := handler.Handle(gc.Url)
 		if err != nil {
-			g.errHandler(err)
+			g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "handler error")))
 			return
 		}
 		for _, result := range results {
 			switch result.Type {
 			case GearResultTypeUrl:
 				if err := g.tc.AddFromUrl(result.Value, gc.DestionationDir); err != nil {
-					g.errHandler(err)
+					g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "torrent client error")))
 					continue
 				}
 			case GearResultTypeContent:
 				if err := g.tc.AddContent([]byte(result.Value), gc.DestionationDir); err != nil {
-					g.errHandler(err)
+					g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "torrent client error")))
 					continue
 				}
 			default:
-				g.errHandler(errors.Errorf("unsupported results type %q", result.Type))
+				g.errHandler(errors.Errorf(wrapMessagef(gc.Name, "unsupported result type %q", result.Type)))
 				continue
 			}
-			log.Printf("[%v] added %q to torrent client", gc.Name, result.Value)
+			log.Println(wrapMessagef(gc.Name, "added %q to torrent client", result.Value))
 		}
 		time.Sleep(time.Duration(gc.CheckSecond) * time.Second)
 	}
+}
+
+func wrapMessagef(name string, format string, args ...interface{}) string {
+	return fmt.Sprintf("[%v] %v", name, fmt.Sprintf(format, args...))
 }
