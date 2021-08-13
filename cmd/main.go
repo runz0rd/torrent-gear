@@ -29,8 +29,9 @@ func run(config string) error {
 	}
 	g := gear.NewGear(tc, func(err error) {
 		log.Print(err)
-		for errors.Unwrap(err) != nil {
-			err = errors.Unwrap(err)
+		originalErr := err
+		for errors.Unwrap(originalErr) != nil {
+			originalErr = errors.Unwrap(originalErr)
 		}
 		if err, ok := err.(gear.StackTracer); ok {
 			for _, f := range err.StackTrace() {

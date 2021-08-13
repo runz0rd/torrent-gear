@@ -2,7 +2,6 @@ package gear
 
 import (
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -48,14 +47,14 @@ func download(fileUrl string, destDir string) (string, error) {
 	// Put content on file
 	resp, err := client.Get(fileUrl)
 	if err != nil {
-		log.Fatal(err)
+		return "", errors.WithStack(err)
 	}
 	defer resp.Body.Close()
 
 	// Build fileName from fileUrl
 	url, err := url.Parse(resp.Request.URL.Path)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 	segments := strings.Split(url.Path, "/")
 	fileName := segments[len(segments)-1]
@@ -63,13 +62,13 @@ func download(fileUrl string, destDir string) (string, error) {
 	// Create file
 	file, err := os.Create(path.Join(destDir, fileName))
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 	defer file.Close()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 	return path.Join(destDir, fileName), nil
 }

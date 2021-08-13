@@ -1,7 +1,6 @@
 package gear
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"time"
@@ -34,7 +33,7 @@ func (gc GearConfig) Handler() (GearType, error) {
 	case "feed":
 		return NewFeedGear(), nil
 	}
-	return nil, fmt.Errorf("no handler of type %v found", gc.Type)
+	return nil, errors.Errorf("no handler of type %v found", gc.Type)
 }
 
 type Config struct {
