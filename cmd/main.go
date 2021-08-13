@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/pkg/errors"
 	gear "github.com/runz0rd/torrent-gear"
@@ -28,11 +30,16 @@ func run(config string) error {
 		return errors.WithMessage(err, "torrent client init error")
 	}
 	g := gear.NewGear(tc, func(err error) {
-		log.Print(err)
+		var stackTrace []string
 		if err, ok := err.(gear.StackTracer); ok {
 			for _, f := range err.StackTrace() {
-				log.Printf("%+s:%d\n", f, f)
+				stackTrace = append(stackTrace, fmt.Sprintf("%+s:%d", f, f))
 			}
+		}
+		if len(stackTrace) == 0 {
+			log.Println(err)
+		} else {
+			log.Printf("%v, stack: %v", err.Error(), strings.Join(stackTrace, "\n"))
 		}
 	})
 	g.Shift(c.Gears...)
