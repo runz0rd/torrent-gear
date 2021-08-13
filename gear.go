@@ -11,6 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type StackTracer interface {
+	StackTrace() errors.StackTrace
+}
+
 type GearType interface {
 	// source could be an url or a filepath, depending on the implementation
 	Process(source string) (filepaths []string, err error)
