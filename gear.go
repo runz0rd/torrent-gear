@@ -3,6 +3,7 @@ package gear
 import (
 	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,9 +15,27 @@ type StackTracer interface {
 	StackTrace() errors.StackTrace
 }
 
+const (
+	GearResultTypeContent = "content"
+	GearResultTypeUrl     = "url"
+)
+
+type GearResult struct {
+	Type  string
+	Value string
+}
+
+func NewGerResult(value string) GearResult {
+	type_ := GearResultTypeContent
+	if strings.HasPrefix(value, "http") {
+		type_ = GearResultTypeUrl
+	}
+	return GearResult{type_, value}
+}
+
 type GearType interface {
 	// source could be an url or a filepath, depending on the implementation
-	Process(source string) (filepaths []string, err error)
+	Process(source string) (results []GearResult, err error)
 }
 
 type GearConfig struct {
@@ -81,15 +100,24 @@ func (g *Gear) handle(gc GearConfig) error {
 	if err != nil {
 		return err
 	}
-	paths, err := handler.Process(gc.Url)
+	results, err := handler.Process(gc.Url)
 	if err != nil {
 		return err
 	}
-	for _, path := range paths {
-		if err := g.tc.Download(path, gc.DestionationDir); err != nil {
-			return err
+	for _, result := range results {
+		switch result.Type {
+		case GearResultTypeUrl:
+			if err := g.tc.AddFromUrl(result.Value, gc.DestionationDir); err != nil {
+				return err
+			}
+		case GearResultTypeContent:
+			if err := g.tc.AddContent([]byte(result.Value), gc.DestionationDir); err != nil {
+				return err
+			}
+		default:
+			return errors.Errorf("unsupported results type %q", result.Type)
 		}
-		log.Printf("[%v] added %q to torrent client", gc.Name, path)
+		log.Printf("[%v] added %q to torrent client", gc.Name, result)
 	}
 	time.Sleep(time.Duration(gc.CheckSecond) * time.Second)
 	return nil
