@@ -84,41 +84,41 @@ func NewGear(tc common.TorrentClient, errHandler func(err error)) *Gear {
 
 func (g *Gear) Shift(gcs ...GearConfig) {
 	for _, gc := range gcs {
-		go func(conf GearConfig) {
-			for {
-				if err := g.handle(conf); err != nil {
-					g.errHandler(err)
-				}
-			}
-		}(gc)
+		go g.handle(gc)
 	}
 }
 
-func (g *Gear) handle(gc GearConfig) error {
-	log.Printf("[%v] checking", gc.Name)
-	handler, err := gc.Handler()
-	if err != nil {
-		return err
-	}
-	results, err := handler.Process(gc.Url)
-	if err != nil {
-		return err
-	}
-	for _, result := range results {
-		switch result.Type {
-		case GearResultTypeUrl:
-			if err := g.tc.AddFromUrl(result.Value, gc.DestionationDir); err != nil {
-				return err
-			}
-		case GearResultTypeContent:
-			if err := g.tc.AddContent([]byte(result.Value), gc.DestionationDir); err != nil {
-				return err
-			}
-		default:
-			return errors.Errorf("unsupported results type %q", result.Type)
+func (g *Gear) handle(gc GearConfig) {
+	for {
+		log.Printf("[%v] checking", gc.Name)
+		handler, err := gc.Handler()
+		if err != nil {
+			g.errHandler(err)
+			return
 		}
-		log.Printf("[%v] added %q to torrent client", gc.Name, result)
+		results, err := handler.Process(gc.Url)
+		if err != nil {
+			g.errHandler(err)
+			return
+		}
+		for _, result := range results {
+			switch result.Type {
+			case GearResultTypeUrl:
+				if err := g.tc.AddFromUrl(result.Value, gc.DestionationDir); err != nil {
+					g.errHandler(err)
+					continue
+				}
+			case GearResultTypeContent:
+				if err := g.tc.AddContent([]byte(result.Value), gc.DestionationDir); err != nil {
+					g.errHandler(err)
+					continue
+				}
+			default:
+				g.errHandler(errors.Errorf("unsupported results type %q", result.Type))
+				continue
+			}
+			log.Printf("[%v] added %q to torrent client", gc.Name, result.Value)
+		}
+		time.Sleep(time.Duration(gc.CheckSecond) * time.Second)
 	}
-	time.Sleep(time.Duration(gc.CheckSecond) * time.Second)
-	return nil
 }
