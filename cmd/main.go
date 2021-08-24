@@ -12,15 +12,17 @@ import (
 
 func main() {
 	var flagConfig string
+	var flagDebug bool
 	flag.StringVar(&flagConfig, "config", "config.yaml", "config file location")
+	flag.BoolVar(&flagDebug, "debug", false, "debug mode")
 	flag.Parse()
 
-	if err := run(flagConfig); err != nil {
+	if err := run(flagConfig, flagDebug); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(config string) error {
+func run(config string, debug bool) error {
 	c, err := gear.ReadConfig(config)
 	if err != nil {
 		return errors.WithMessage(err, "config read error")
@@ -30,16 +32,18 @@ func run(config string) error {
 		return errors.WithMessage(err, "torrent client init error")
 	}
 	g := gear.NewGear(tc, func(err error) {
-		var stackTrace []string
-		if err, ok := err.(gear.StackTracer); ok {
-			for _, f := range err.StackTrace() {
-				stackTrace = append(stackTrace, fmt.Sprintf("%+s:%d", f, f))
+		log.Println(err)
+		if debug {
+			var stackTrace []string
+			if err, ok := err.(gear.StackTracer); ok {
+				for _, f := range err.StackTrace() {
+					stackTrace = append(stackTrace, fmt.Sprintf("%+s:%d", f, f))
+				}
 			}
-		}
-		if len(stackTrace) == 0 {
-			log.Println(err)
-		} else {
-			log.Printf("%v, stack: %v", err.Error(), strings.Join(stackTrace, "\n"))
+
+			if len(stackTrace) > 0 {
+				log.Printf("stack: %v", strings.Join(stackTrace, "\n"))
+			}
 		}
 	})
 	g.Shift(c.Gears...)
