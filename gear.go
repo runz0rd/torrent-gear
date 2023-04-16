@@ -48,7 +48,7 @@ type GearConfig struct {
 	Type            string `yaml:"type,omitempty"`
 }
 
-func (gc GearConfig) Handler() (GearHandler, error) {
+func (gc GearConfig) GearHandler() (GearHandler, error) {
 	switch gc.Type {
 	// todo implement more gears!
 	case "feed":
@@ -92,39 +92,39 @@ func (g *Gear) Shift(gcs ...GearConfig) {
 
 func (g *Gear) handle(gc GearConfig) {
 	for {
-		log.Println(wrapMessagef(gc.Name, "checking"))
-		handler, err := gc.Handler()
+		log.Println(gc.wrapMessagef("checking"))
+		handler, err := gc.GearHandler()
 		if err != nil {
-			g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "handler init error")))
+			g.errHandler(errors.Wrap(err, gc.wrapMessagef("handler init error")))
 			return
 		}
 		results, err := handler.Handle(gc.Url)
 		if err != nil {
-			g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "handler error")))
+			g.errHandler(errors.Wrap(err, gc.wrapMessagef("handler error")))
 			return
 		}
 		for _, result := range results {
 			switch result.Type {
 			case GearResultTypeUrl:
 				if err := g.tc.AddFromUrl(result.Value, gc.DestionationDir); err != nil {
-					g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "torrent client error")))
+					g.errHandler(errors.Wrap(err, gc.wrapMessagef("torrent client error for %q", result.Name)))
 					continue
 				}
 			case GearResultTypeContent:
 				if err := g.tc.AddContent([]byte(result.Value), gc.DestionationDir); err != nil {
-					g.errHandler(errors.Wrap(err, wrapMessagef(gc.Name, "torrent client error")))
+					g.errHandler(errors.Wrap(err, gc.wrapMessagef("torrent client error for %q", result.Name)))
 					continue
 				}
 			default:
-				g.errHandler(errors.Errorf(wrapMessagef(gc.Name, "unsupported result type %q", result.Type)))
+				g.errHandler(errors.Errorf(gc.wrapMessagef("unsupported result type %q for %q", result.Type, result.Name)))
 				continue
 			}
-			log.Println(wrapMessagef(gc.Name, "added %q to torrent client", result.Name))
+			log.Println(gc.wrapMessagef("added %q to torrent client", result.Name))
 		}
 		time.Sleep(time.Duration(gc.CheckSecond) * time.Second)
 	}
 }
 
-func wrapMessagef(name string, format string, args ...interface{}) string {
-	return fmt.Sprintf("[%v] %v", name, fmt.Sprintf(format, args...))
+func (gc GearConfig) wrapMessagef(format string, args ...interface{}) string {
+	return fmt.Sprintf("[%v] %v", gc.Name, fmt.Sprintf(format, args...))
 }
