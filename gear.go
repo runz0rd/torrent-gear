@@ -107,12 +107,14 @@ func (g *Gear) handle(gc GearConfig) {
 			switch result.Type {
 			case GearResultTypeUrl:
 				if err := g.tc.AddFromUrl(result.Value, gc.DestionationDir); err != nil {
-					g.errHandler(errors.Wrap(err, gc.wrapMessagef("torrent client error for %q", result.Name)))
+					gearErr := gc.wrapMessagef("torrent client error for %q of type %q", result.Name, result.Type)
+					g.errHandler(errors.Wrap(err, gearErr))
 					continue
 				}
 			case GearResultTypeContent:
 				if err := g.tc.AddContent([]byte(result.Value), gc.DestionationDir); err != nil {
-					g.errHandler(errors.Wrap(err, gc.wrapMessagef("torrent client error for %q", result.Name)))
+					gearErr := gc.wrapMessagef("torrent client error for %q of type %q", result.Name, result.Type)
+					g.errHandler(errors.Wrap(err, gearErr))
 					continue
 				}
 			default:
